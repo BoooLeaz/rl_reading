@@ -1,0 +1,68 @@
+default:
+  # experiment setup
+  environment: toy_sophisticated
+  train_trajectory_name: trajectory_180125.txt
+  n_features: 3
+  stop_after_episode: 150
+  hose_radius: 0.75
+  upper_hose_radius: 1.5
+  # General settings
+  keep_n_episodes: 99999  # For now we do not forget episodes
+  model: MLP
+  agent: MLPAgent
+  3d_actions: true
+  angle: 45.0  # with 2D actions, on which angle to walk and whch plane to plot; with 3D actions, just which plane to plot
+  action_set: 3d
+  hallucinate: 0.9  # 0 - 1 where 0 means no hallucination, 1 means only hallucination (1 doesn't make sense in new setting)
+  # NN params
+  lstm_hidden: 30
+  target_update_rate: 200
+  min_train_steps_per_episode: 200
+  max_train_steps_per_episode: 2000
+  miniMLP_n_hidden: 20  # for MiniMLP
+  miniMLP_scaling: 4.0  # for MiniMLP
+  # Optimization
+  optimizer: Adam  # Adam or SGD
+  lr: 0.001
+  batch_size: 30
+  momentum: 0.0  # only active for SGD
+  # Reinforcement Learning
+  gamma: 0.97
+  action_temperature: 0.004
+  train_temperature: -0.1  # this temperature is only used for the train step
+  fail_reward: -1
+  success_reward: 1
+  step_reward: 0.01
+  # AllOverAgent specific
+  rupture_ausschmierung: 0.2
+  hallucination_scale: 0.6  # how far around existing states do we hallucinate
+
+gridsearch:
+    config1:
+        name:
+            - normal
+        hallucinate:
+            - 0.0
+        train_temperature:
+            - 0.004
+    config2:
+        name:
+            - hallucinate
+        hallucinate:
+            - 0.9
+        train_temperature:
+            - 0.004
+    config3:
+        name:
+            - neg_temp
+        hallucinate:
+            - 0.0
+        train_temperature:
+            - -0.100
+    config4:
+        name:
+            - hallucinate_&_neg_temp
+        hallucinate:
+            - 0.9
+        train_temperature:
+            - -0.100
