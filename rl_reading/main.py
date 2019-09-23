@@ -8,6 +8,7 @@ import numpy as np
 from ruamel.yaml import YAML
 import torch
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 # imports from this project
 from reward import Reward
@@ -87,13 +88,16 @@ def main(params):
 #        model.save(previous_model_path)
 
     n_rows = 1
+    n_cols = 3
     batch_size = 1
     n_classes = 2
     train_size = 100
-    for x, y, masks in tqdm(mnist_david.get_data(
+    for x, y in tqdm(mnist_david.get_data(
                                 batch_size=batch_size, n_classes=n_classes, n_rows=n_rows,
+                                n_cols=n_cols,
                                 train_size=train_size),
                             total=train_size):
+        import ipdb; ipdb.set_trace()
         outputs = model(x, y)
 
     # agent
