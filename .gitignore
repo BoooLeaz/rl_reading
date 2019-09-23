@@ -116,3 +116,4 @@ paper.pdf
 paper.tar.gz
 *.fls
 *fdb_latexmk
+dataset
