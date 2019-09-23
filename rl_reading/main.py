@@ -3,20 +3,21 @@ import logging
 import os
 import sys
 import time
-import tarfile
 import shutil
 import numpy as np
 from ruamel.yaml import YAML
 import torch
+from tqdm import tqdm
 
 # imports from this project
 from reward import Reward
 import agents
 import models
 import util
+import mnist_david
 
 yaml = YAML()
-logger = logging.Logger()
+logger = logging.Logger('main_logger')
 
 
 def main(params):
@@ -54,8 +55,9 @@ def main(params):
     }
     program_state_path = os.path.join(output_path, 'program_state.yaml')
     try:
-        with open(program_state_path, 'r') as f:
-            program_state = yaml.load(f)
+        # TODO
+#        with open(program_state_path, 'r') as f:
+#            program_state = yaml.load(f)
         logger.info('Loaded program_state')
     except Exception:
         logger.debug('Did not find program_state.dump file to restore program state, starting new')
@@ -63,15 +65,14 @@ def main(params):
 
     # ACTIONS
     actions = np.array(["0", "1", "linefeed"])
-    n_actions = len(actions)
 
     # setup models
     # Reward
     reward = Reward(step_reward=params['step_reward'], fail=params['fail_reward'], success=1.0)
     # QModels
     model_module = getattr(models, params['model'])
-    model = model_module.Model(params, n_actions)
-    target_model = model_module.Model(params, n_actions)
+    model = model_module.Model(params, actions)
+    target_model = model_module.Model(params, actions)
     current_model_path = os.path.join(output_path, 'models', 'current')
     previous_model_path = os.path.join(output_path, 'models', 'previous')
     try:
@@ -82,21 +83,31 @@ def main(params):
         model.save(current_model_path)
         model.save(previous_model_path)
 
+    n_rows = 1
+    batch_size= 1
+    n_classes = 2
+    train_size = 100
+    for x, y, masks in tqdm(mnist_david.get_data(
+                                batch_size=batch_size, n_classes=n_classes, n_rows=n_rows,
+                                train_size=train_size),
+                            total=train_size):
+        model(x)
+
     # agent
-    agent_module = getattr(agents, params['agent'])
-    agent = agent_module.Agent(
-        params=params,
-        model=model,
-        target_model=target_model,
-        actions=actions,
-        reward=reward,
-        global_step=program_state['global_step'],
-        episode=program_state['episode'])
+#    agent_module = getattr(agents, params['agent'])
+#    agent = agent_module.Agent(
+#        params=params,
+#        model=model,
+#        target_model=target_model,
+#        actions=actions,
+#        reward=reward,
+#        global_step=program_state['global_step'],
+#        episode=program_state['episode'])
 
     logger.info('Starting at training step ' + str(agent.global_step))
     while True:
-        agent.reset()
 
+        agent.reset()
         agent.run_episode()
 
         # update program state
@@ -121,9 +132,9 @@ if __name__ == '__main__':
 
     # cmd line args
     parser = argparse.ArgumentParser()
-    parser.add_argument('--output_path', default='outfiles/test1', help='destination of results')
+    parser.add_argument('--path', default='outfiles/test1', help='destination of results')
     args = parser.parse_args()
-    params['output_path'] = args.output_path
+    params['output_path'] = args.path
 
     # create main output directory
     if not os.path.exists(params['output_path']):
