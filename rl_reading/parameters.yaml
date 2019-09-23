@@ -8,14 +8,14 @@ default:
   upper_hose_radius: 1.5
   # General settings
   keep_n_episodes: 99999  # For now we do not forget episodes
-  model: MLP
+  model: lstm
   agent: MLPAgent
   3d_actions: true
   angle: 45.0  # with 2D actions, on which angle to walk and whch plane to plot; with 3D actions, just which plane to plot
   action_set: 3d
   hallucinate: 0.9  # 0 - 1 where 0 means no hallucination, 1 means only hallucination (1 doesn't make sense in new setting)
   # NN params
-  lstm_hidden: 30
+  gru_hidden_size: 120
   target_update_rate: 200
   min_train_steps_per_episode: 200
   max_train_steps_per_episode: 2000
