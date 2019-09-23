@@ -5,13 +5,17 @@ import random
 from . import basemodel
 
 
+def init_weights(m):
+    for name, param in m.named_parameters():
+        torch.nn.init.uniform_(param.data, -0.08, 0.08)
+
+
 class Encoder(basemodel.BaseModel):
-    def __init__(self, params, n_actions):
+    def __init__(self, params):
         super(Encoder, self).__init__()
 
         self.batch_size = 1
         self.gru_hidden_size = params['gru_hidden_size']
-        self.n_actions = n_actions
         self._initialize()
 
     def _initialize(self):
@@ -51,7 +55,7 @@ class Encoder(basemodel.BaseModel):
 
 
 class Decoder(basemodel.BaseModel):
-    def __init__(self, params, n_actions, name=None):
+    def __init__(self, params, n_actions):
         super(Decoder, self).__init__()
 
         self.gru_hidden_size = params['gru_hidden_size']  # number of hidden neurons in each layer
@@ -66,7 +70,7 @@ class Decoder(basemodel.BaseModel):
                                         hidden_size=self.gru_hidden_size,
                                         num_layers=1,
                                         batch_first=True)
-        self.out = torch.nn.Linear(in_fueatures=self.gru_hidden_size, out_features=self.n_actions)
+        self.out = torch.nn.Linear(in_features=self.gru_hidden_size, out_features=self.n_actions)
 
     def forward(self, x, h):
         """

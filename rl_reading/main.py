@@ -68,30 +68,33 @@ def main(params):
 
     # setup models
     # Reward
-    reward = Reward(step_reward=params['step_reward'], fail=params['fail_reward'], success=1.0)
+#    reward = Reward(step_reward=params['step_reward'], fail=params['fail_reward'], success=1.0)
     # QModels
     model_module = getattr(models, params['model'])
-    model = model_module.Model(params, actions)
-    target_model = model_module.Model(params, actions)
-    current_model_path = os.path.join(output_path, 'models', 'current')
-    previous_model_path = os.path.join(output_path, 'models', 'previous')
-    try:
-        logger.info('Loading model from: ' + current_model_path)
-        model = torch.load(current_model_path)
-        target_model = torch.load(current_model_path)
-    except Exception:
-        model.save(current_model_path)
-        model.save(previous_model_path)
+    encoder = model_module.Encoder(params)
+    decoder = model_module.Decoder(params, len(actions))
+    model = model_module.EncoderDecoder(encoder, decoder, params['device'])
+    model.apply(model_module.init_weights)
+#    target_model = model_module.Model(params, actions)
+#    current_model_path = os.path.join(output_path, 'models', 'current')
+#    previous_model_path = os.path.join(output_path, 'models', 'previous')
+#    try:
+#        logger.info('Loading model from: ' + current_model_path)
+#        model = torch.load(current_model_path)
+#        target_model = torch.load(current_model_path)
+#    except Exception:
+#        model.save(current_model_path)
+#        model.save(previous_model_path)
 
     n_rows = 1
-    batch_size= 1
+    batch_size = 1
     n_classes = 2
     train_size = 100
     for x, y, masks in tqdm(mnist_david.get_data(
                                 batch_size=batch_size, n_classes=n_classes, n_rows=n_rows,
                                 train_size=train_size),
                             total=train_size):
-        model(x)
+        outputs = model(x, y)
 
     # agent
 #    agent_module = getattr(agents, params['agent'])

@@ -1,4 +1,5 @@
 default:
+  device: cpu
   # experiment setup
   environment: toy_sophisticated
   train_trajectory_name: trajectory_180125.txt
