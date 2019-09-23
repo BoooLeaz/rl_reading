@@ -26,20 +26,21 @@ def get_loss_f():
 
 class Grid:
 
-    def __init__(self, n_rows, padding, cell_height, cell_width):
+    def __init__(self, n_rows, n_cols, padding, cell_height, cell_width):
             self.n_rows = n_rows
+            self.n_cols = n_cols
             self.padding = padding
-            self.n_canvas = n_rows*n_rows
+            self.n_canvas = n_rows*n_cols
             self.cell_height = cell_height
             self.cell_width = cell_width
             self.shape = (
                 (self.n_rows * self.cell_height) + ((self.n_rows+1) * self.padding),
-                (self.n_rows * self.cell_width) + ((self.n_rows+1) * self.padding)
+                (self.n_cols * self.cell_width) + ((self.n_cols+1) * self.padding)
             )
 
     def bb(self, ind):
-        row = ind//self.n_rows
-        col = ind%self.n_rows
+        row = ind//self.n_cols
+        col = (ind%self.n_cols)//self.n_rows
 
         top = (row * self.cell_height) + ((row+1) * self.padding)
         left = (col * self.cell_width) + ((col+1) * self.padding)
@@ -49,8 +50,7 @@ class Grid:
         return top, left, bottom, right
 
 
-def get_data(batch_size=32, n_classes=10, n_rows=5, train_size=1000, padding=1):
-
+def get_data(batch_size=32, n_classes=10, n_rows=5, n_cols=5, train_size=1000, padding=0):
         data_transforms = {
             'train': transforms.Compose([
                 transforms.Resize((30,30)),
@@ -87,13 +87,13 @@ def get_data(batch_size=32, n_classes=10, n_rows=5, train_size=1000, padding=1):
         x, y = zip(*[image_datasets["train"][i] for i in range(len(image_datasets["train"]))])
         x = torch.cat(x)
         y = torch.tensor(y)
-        n_canvas = n_rows*n_rows
+        n_canvas = n_rows*n_cols
 
         x_by_class = {
             d:x[y==d] for d in range(n_classes)
         }
 
-        grid = Grid(n_rows, padding, *x[0].shape)
+        grid = Grid(n_rows, n_cols, padding, *x[0].shape)
 
         for _ in range(train_size):
             
@@ -119,13 +119,11 @@ def get_data(batch_size=32, n_classes=10, n_rows=5, train_size=1000, padding=1):
                     masks[isample, d].narrow(0,t, grid.cell_height).narrow(1,l,grid.cell_width).copy_(x_by_class[d][
                         Multinomial(total_count=1, probs=probs_mult).sample().argmax().item()
                     ])
-
-
                     x_[isample].narrow(0,t, grid.cell_height).narrow(1,l,grid.cell_width).copy_(
                         masks[isample, d].narrow(0,t, grid.cell_height).narrow(1,l,grid.cell_width)
                     )
 
-            y_ = torch.stack([torch.histc(y__.float(), bins=n_classes) for y__ in y_.view(-1,n_canvas)])
+#            y_ = torch.stack([torch.histc(y__.float(), bins=n_classes) for y__ in y_.view(-1,n_canvas)])
             x_ = x_.view(-1, 1, *x_[0].shape)
 #            x_ = x_.view(-1, 1, *x_[0].shape).repeat(1,3,1,1)
-            yield x_, y_, masks
+            yield x_, y_
