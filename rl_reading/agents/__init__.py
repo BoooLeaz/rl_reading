@@ -1,1 +1,1 @@
-from . import base_agent, MLPAgent, ManyMLPAgent, TableAgent, AllOverAgent
+from . import base_agent, MLPAgent

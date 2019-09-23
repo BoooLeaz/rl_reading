@@ -7,8 +7,6 @@ import os
 from scipy.special import softmax
 
 import util
-import optimizer_util
-import plotting
 from . import base_agent
 
 logger = logging.getLogger('general')

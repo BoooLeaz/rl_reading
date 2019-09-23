@@ -9,7 +9,6 @@ from scipy.special import softmax
 
 import util
 import optimizer_util
-import plotting
 
 
 logger = logging.getLogger('general')
