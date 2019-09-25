@@ -31,6 +31,7 @@ def main(params):
         gridsearch = False
 
     plot_interval = 10 if gridsearch else 1
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     with open(os.path.join(output_path, 'parameters.yaml'), 'w') as f:
         yaml.dump(params, f)
@@ -54,15 +55,16 @@ def main(params):
         'run_finished': False,
         'start_time': time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(start_time))
     }
+    program_state = start_program_state
     program_state_path = os.path.join(output_path, 'program_state.yaml')
-    try:
-        # TODO
+#    try:
+#        # TODO
 #        with open(program_state_path, 'r') as f:
 #            program_state = yaml.load(f)
-        logger.info('Loaded program_state')
-    except Exception:
-        logger.debug('Did not find program_state.dump file to restore program state, starting new')
-        program_state = start_program_state
+#        logger.info('Loaded program_state')
+#    except Exception:
+#        logger.debug('Did not find program_state.dump file to restore program state, starting new')
+#        program_state = start_program_state
 
     # ACTIONS
     actions = np.array(["0", "1", "linefeed"])
@@ -74,7 +76,7 @@ def main(params):
     model_module = getattr(models, params['model'])
     encoder = model_module.Encoder(params)
     decoder = model_module.Decoder(params, len(actions))
-    model = model_module.EncoderDecoder(encoder, decoder, params['device'])
+    model = model_module.EncoderDecoder(encoder, decoder, device=device)
     model.apply(model_module.init_weights)
 #    target_model = model_module.Model(params, actions)
 #    current_model_path = os.path.join(output_path, 'models', 'current')
