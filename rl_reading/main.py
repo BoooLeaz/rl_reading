@@ -31,7 +31,8 @@ def main(params):
         gridsearch = False
 
     plot_interval = 10 if gridsearch else 1
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+#    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = 'cpu'
 
     with open(os.path.join(output_path, 'parameters.yaml'), 'w') as f:
         yaml.dump(params, f)
@@ -90,17 +91,16 @@ def main(params):
 #        model.save(previous_model_path)
 
     n_rows = 1
-    n_cols = 3
+    n_cols = 1
     batch_size = 1
     n_classes = 2
     train_size = 100
-    for x, y in tqdm(mnist_david.get_data(
-                                batch_size=batch_size, n_classes=n_classes, n_rows=n_rows,
-                                n_cols=n_cols,
-                                train_size=train_size),
-                            total=train_size):
-        import ipdb; ipdb.set_trace()
+    for x, y in mnist_david.get_data(
+                    batch_size=batch_size, n_classes=n_classes, n_rows=n_rows,
+                    n_cols=n_cols,
+                    train_size=train_size):
         outputs = model(x, y)
+        import ipdb; ipdb.set_trace()
 
     # agent
 #    agent_module = getattr(agents, params['agent'])
@@ -148,11 +148,11 @@ if __name__ == '__main__':
     # create main output directory
     if not os.path.exists(params['output_path']):
         os.makedirs(params['output_path'])
-    else:
-        inpt = input('WARNING: Output directory already exists! ' +
-                     'Continue training? [y/N] (default: y)')
-        if inpt.capitalize() == 'N':
-            sys.exit('Ok exiting')
+#    else:
+#        inpt = input('WARNING: Output directory already exists! ' +
+#                     'Continue training? [y/N] (default: y)')
+#        if inpt.capitalize() == 'N':
+#            sys.exit('Ok exiting')
 
     with open(os.path.join(params['output_path'], 'parameters.yaml'), 'w') as f:
         yaml.dump(params, f)

@@ -20,7 +20,7 @@ class Encoder(basemodel.BaseModel):
 
     def _initialize(self):
         self.convnet = torch.nn.Sequential(OrderedDict([
-            ('c1', torch.nn.Conv2d(1, 6, kernel_size=(5, 5))),
+            ('c1', torch.nn.Conv2d(1, 6, kernel_size=(5, 5), padding=(2, 2))),
             ('relu1', torch.nn.ReLU()),
             ('s2', torch.nn.MaxPool2d(kernel_size=(2, 2), stride=2)),
             ('c3', torch.nn.Conv2d(6, 16, kernel_size=(5, 5))),
@@ -29,12 +29,7 @@ class Encoder(basemodel.BaseModel):
             ('c5', torch.nn.Conv2d(16, 120, kernel_size=(5, 5))),
             ('relu5', torch.nn.ReLU())
         ]))
-        # TODO input size
         self.encoder_gru = torch.nn.GRU(input_size=self.gru_hidden_size,
-                                        hidden_size=self.gru_hidden_size,
-                                        num_layers=1,
-                                        batch_first=True)
-        self.decoder_gru = torch.nn.GRU(input_size=self.gru_hidden_size,
                                         hidden_size=self.gru_hidden_size,
                                         num_layers=1,
                                         batch_first=True)
@@ -65,8 +60,7 @@ class Decoder(basemodel.BaseModel):
         self._initialize()
 
     def _initialize(self):
-        self.embedding = torch.nn.Embedding(self.n_actions, 50)
-        self.decoder_gru = torch.nn.GRU(input_size=self.gru_hidden_size,
+        self.decoder_gru = torch.nn.GRU(input_size=self.n_actions,
                                         hidden_size=self.gru_hidden_size,
                                         num_layers=1,
                                         batch_first=True)
@@ -77,11 +71,12 @@ class Decoder(basemodel.BaseModel):
         x: (batch_size,)
         h: (batch_size, gru_hidden_size)
         """
-        x = x.unsqueeze(0)
-        embedded = self.embedding(x)
-        _, h = self.decoder_gru(embedded, h)
+        # add sequence dimension
+        x = x.unsqueeze(1)
+        one_hot_embedded = torch.nn.functional.one_hot(x.to(torch.int64), self.n_actions).to(torch.float32)
+        _, h = self.decoder_gru(one_hot_embedded, h)
         output = self.out(h)
-        return output
+        return output, h
 
 
 class EncoderDecoder(basemodel.BaseModel):
@@ -109,7 +104,7 @@ class EncoderDecoder(basemodel.BaseModel):
         # first input to the decoder is the <sos> tokens
         y_hat_ = torch.zeros(batch_size)
 
-        for t in range(1, max_len):
+        for t in range(0, max_len):
             #insert input token embedding, previous hidden and previous cell states
             #receive output tensor (predictions) and new hidden and cell states
             output, hidden = self.decoder(y_hat_, hidden)
