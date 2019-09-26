@@ -50,17 +50,18 @@ class Encoder(basemodel.BaseModel):
 
 
 class Decoder(basemodel.BaseModel):
-    def __init__(self, params, n_actions):
+    def __init__(self, params, n_actions, n_characters):
         super(Decoder, self).__init__()
 
         self.gru_hidden_size = params['gru_hidden_size']  # number of hidden neurons in each layer
         self.n_actions = n_actions
+        self.n_characters = n_characters
         self.action_encodings = torch.eye(self.n_actions, self.n_actions)
         self.batch_size = 1
         self._initialize()
 
     def _initialize(self):
-        self.decoder_gru = torch.nn.GRU(input_size=self.n_actions,
+        self.decoder_gru = torch.nn.GRU(input_size=self.n_characters,
                                         hidden_size=self.gru_hidden_size,
                                         num_layers=1,
                                         batch_first=True)
@@ -73,8 +74,11 @@ class Decoder(basemodel.BaseModel):
         """
         # add sequence dimension
         x = x.unsqueeze(1)
-        one_hot_embedded = torch.nn.functional.one_hot(x.to(torch.int64), self.n_actions).to(torch.float32)
+        # one-hot encode the input characters
+        one_hot_embedded = torch.nn.functional.one_hot(x.to(torch.int64), self.n_characters).to(torch.float32)
+        # do one step with the RNN (output and hidden state of the rnn are the same here)
         _, h = self.decoder_gru(one_hot_embedded, h)
+        # use the RNN hidden state to compute an output indicating which character comes next
         output = self.out(h)
         return output, h
 

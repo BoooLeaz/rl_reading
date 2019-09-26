@@ -68,7 +68,8 @@ def main(params):
 #        program_state = start_program_state
 
     # ACTIONS
-    actions = np.array(["0", "1", "linefeed"])
+    characters = np.array(["<sos>", "<eos>", "0", "1", "linefeed"])
+    actions    = np.array([                  "0", "1", "linefeed"])
 
     # setup models
     # Reward
@@ -76,7 +77,7 @@ def main(params):
     # QModels
     model_module = getattr(models, params['model'])
     encoder = model_module.Encoder(params)
-    decoder = model_module.Decoder(params, len(actions))
+    decoder = model_module.Decoder(params, n_actions=len(actions), n_characters=len(characters))
     model = model_module.EncoderDecoder(encoder, decoder, device=device)
     model.apply(model_module.init_weights)
 #    target_model = model_module.Model(params, actions)
