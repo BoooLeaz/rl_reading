@@ -70,10 +70,10 @@ def main(params):
     # ACTIONS
 #    characters = np.array(["0", "1"])
 #    actions    = np.array(["0", "1"])
-    n_rows = 3
-    n_cols = 3
+    n_rows = 1
+    n_cols = 25
     batch_size = 1
-    train_size = 10000000
+    train_size = 10000000000
     n_classes = 9
     clip_grad = 1
 
@@ -105,7 +105,18 @@ def main(params):
                     n_cols=n_cols,
                     train_size=train_size):
         y = y.flatten()
-        x = torch.transpose(torch.nn.Unfold(kernel_size=(32, 32), stride=(32, 32))(x), 1, 2).view(-1, 1, 32, 32)
+        x_ = torch.transpose(torch.nn.Unfold(kernel_size=(32, 32), stride=(32, 32))(x), 1, 2).view(-1, 1, 32, 32)
+        plt.imshow(x[0, 0])
+        plt.savefig('orig')
+        plt.imshow(x_[0, 0])
+        plt.savefig('0')
+        plt.imshow(x_[1, 0])
+        plt.savefig('1')
+        plt.imshow(x_[2, 0])
+        plt.savefig('2')
+        plt.imshow(x_[3, 0])
+        plt.savefig('3')
+        import ipdb; ipdb.set_trace()
         outputs = model.forward(x, y)
         criterion = torch.nn.CrossEntropyLoss()
         loss = criterion(outputs, y)
