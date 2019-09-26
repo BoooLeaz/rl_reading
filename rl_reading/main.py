@@ -113,7 +113,7 @@ def main(params):
         torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad)
         optimizer.step()
         epoch_loss += loss.item()
-        print(outputs.argmax().item(), int(y))
+        print(outputs.argmax(axis=1), y)
         print(loss.item())
 
     # agent

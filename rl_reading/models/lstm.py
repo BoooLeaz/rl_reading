@@ -36,6 +36,8 @@ class Encoder(basemodel.BaseModel):
     def forward(self, x):
         """
         :param x: torch tensor (sequence_length, width, height), dtype: float32
+
+        :returns hidden: (num_rnn_directions * rnn_layers, batch_size, hidden_size)
         """
         sequence_length = x.size(0)
         # in the batch dimension of the convnet we put the sequence dimension instead
@@ -67,13 +69,13 @@ class Decoder(basemodel.BaseModel):
 
     def forward(self, x, h):
         """
-        :param x: tensor shape (1,), dtype: int64
+        :param x: tensor shape (,), dtype: int64
             contains the last predicted digit
-        :param h: tensor shape (1, gru_hidden_size)
+        :param h: tensor shape (1, 1, gru_hidden_size)
             contains the hidden state of the RNN.
         """
-        # add batch dimension
-        x = x.unsqueeze(0)
+        # add sequence_length and num_rnn_directions dimensions
+        x = x.view(1, 1)
         # one-hot encode the input characters
         one_hot_embedded = torch.nn.functional.one_hot(x, self.n_characters).to(torch.float32)
         # do one step with the RNN (output and hidden state of the rnn are the same here)
@@ -105,14 +107,17 @@ class EncoderDecoder(basemodel.BaseModel):
 
         # last hidden state of the encoder is used as the initial hidden state of the decoder
         hidden = self.encoder(x)
+        # hidden: (num_rnn_directions * rnn_layers, batch_size, hidden_size)
 
-        # first input to the decoder is the <sos> tokens
+        # first input to the decoder
         x = torch.zeros(size=(1,) , dtype=torch.int64)
 
         for t in range(0, target_sequence_length):
             #insert input token embedding, previous hidden and previous cell states
             #receive output tensor (predictions) and new hidden and cell states
             output, hidden = self.decoder(x, hidden)
+            # output (batch_size, sequence_length, num_rnn_directions * hidden_size)
+            # hidden (batch_size, num_rnn_directions, hidden_size)
 
             #place predictions in a tensor holding predictions for each token
             outputs[t] = output
@@ -121,7 +126,8 @@ class EncoderDecoder(basemodel.BaseModel):
             teacher_force = random.random() < teacher_forcing_ratio
 
             #get the highest predicted token from our predictions
-            top1 = output.argmax(axis=1)
+            top1 = output.argmax(axis=2).squeeze()
+            # top1 shape (,)
 
             #if teacher forcing, use actual next token as next input
             #if not, use predicted token
