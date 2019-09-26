@@ -53,12 +53,12 @@ class Grid:
 def get_data(batch_size=32, n_classes=10, n_rows=5, n_cols=5, train_size=1000, padding=0):
     """
     Returns
-        x: tensor of shape (batch_size, 1, nrows * 28, n_cols * 28), dtype: float32
+        x: tensor of shape (batch_size, 1, nrows * 32, n_cols * 32), dtype: float32
         y: tensor of shape (batch_size), dtype int64
     """
     data_transforms = {
         'train': transforms.Compose([
-            transforms.Resize((30,30)),
+            transforms.Resize((32,32)),
             transforms.RandomAffine(0, (4/28,4/28)),
             transforms.Grayscale(),
             transforms.ToTensor(),
@@ -66,7 +66,7 @@ def get_data(batch_size=32, n_classes=10, n_rows=5, n_cols=5, train_size=1000, p
 
         ]),
         'test': transforms.Compose([
-            transforms.Resize((30,30)),
+            transforms.Resize((32,32)),
             transforms.RandomAffine(0, (4/28,4/28)),
             transforms.Grayscale(),
             transforms.ToTensor(),

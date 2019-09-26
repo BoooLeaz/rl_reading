@@ -19,7 +19,7 @@ class Encoder(basemodel.BaseModel):
 
     def _initialize(self):
         self.convnet = torch.nn.Sequential(OrderedDict([
-            ('c1', torch.nn.Conv2d(1, 6, kernel_size=(5, 5), padding=(2, 2))),
+            ('c1', torch.nn.Conv2d(1, 6, kernel_size=(5, 5), padding=(0, 0))),
             ('relu1', torch.nn.ReLU()),
             ('s2', torch.nn.MaxPool2d(kernel_size=(2, 2), stride=2)),
             ('c3', torch.nn.Conv2d(6, 16, kernel_size=(5, 5))),
