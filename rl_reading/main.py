@@ -100,23 +100,23 @@ def main(params):
 
     epoch_loss = 0
     optimizer = torch.optim.Adam(model.parameters())
-    for x, y in mnist_david.get_data(
+    for i, sample in enumerate(mnist_david.get_data(
                     batch_size=batch_size, n_classes=n_classes, n_rows=n_rows,
                     n_cols=n_cols,
-                    train_size=train_size):
+                    train_size=train_size)):
+        x, y = sample
         y = y.flatten()
-        x_ = torch.transpose(torch.nn.Unfold(kernel_size=(32, 32), stride=(32, 32))(x), 1, 2).view(-1, 1, 32, 32)
-        plt.imshow(x[0, 0])
-        plt.savefig('orig')
-        plt.imshow(x_[0, 0])
-        plt.savefig('0')
-        plt.imshow(x_[1, 0])
-        plt.savefig('1')
-        plt.imshow(x_[2, 0])
-        plt.savefig('2')
-        plt.imshow(x_[3, 0])
-        plt.savefig('3')
-        import ipdb; ipdb.set_trace()
+        x = torch.transpose(torch.nn.Unfold(kernel_size=(32, 32), stride=(32, 32))(x), 1, 2).view(-1, 1, 32, 32)
+#        plt.imshow(x[0, 0])
+#        plt.savefig('orig')
+#        plt.imshow(x_[0, 0])
+#        plt.savefig('0')
+#        plt.imshow(x_[1, 0])
+#        plt.savefig('1')
+#        plt.imshow(x_[2, 0])
+#        plt.savefig('2')
+#        plt.imshow(x_[3, 0])
+#        plt.savefig('3')
         outputs = model.forward(x, y)
         criterion = torch.nn.CrossEntropyLoss()
         loss = criterion(outputs, y)
@@ -125,8 +125,10 @@ def main(params):
         torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad)
         optimizer.step()
         epoch_loss += loss.item()
-        print(outputs.argmax(axis=1), y)
-        print(loss.item())
+        if i % 100 == 0:
+            print('iteration: {}'.format(i))
+            print(outputs.argmax(axis=1), y)
+            print(loss.item())
 
     # agent
 #    agent_module = getattr(agents, params['agent'])
