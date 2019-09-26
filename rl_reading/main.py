@@ -70,7 +70,7 @@ def main(params):
     # ACTIONS
 #    characters = np.array(["0", "1"])
 #    actions    = np.array(["0", "1"])
-    n_rows = 2
+    n_rows = 1
     n_cols = 1
     batch_size = 1
     train_size = 10000000
@@ -105,8 +105,7 @@ def main(params):
                     n_cols=n_cols,
                     train_size=train_size):
         y = y.flatten()
-        outputs = model(x, y)
-        outputs = outputs.view(batch_size * outputs.shape[1], -1)
+        outputs = model.forward(x, y)
         criterion = torch.nn.CrossEntropyLoss()
         loss = criterion(outputs, y)
         optimizer.zero_grad()

@@ -14,7 +14,6 @@ class Encoder(basemodel.BaseModel):
     def __init__(self, params):
         super(Encoder, self).__init__()
 
-        self.batch_size = 1
         self.gru_hidden_size = params['gru_hidden_size']
         self._initialize()
 
@@ -36,13 +35,13 @@ class Encoder(basemodel.BaseModel):
 
     def forward(self, x):
         """
-        x: (sequence_length, width, height)
+        :param x: torch tensor (sequence_length, width, height), dtype: float32
         """
         sequence_length = x.size(0)
         # in the batch dimension of the convnet we put the sequence dimension instead
         # in this way we can only have batch_size 1
         x = self.convnet(x)
-        # reshape to (batch_size, sequence_length, gru_input_size)
+        # reshape to (batch_size=1, sequence_length, gru_input_size)
         x = x.view(1, sequence_length, self.gru_hidden_size)
         _, hidden = self.encoder_gru(x)
         # hidden shape: (num_layers * num_directions, batch, hidden_size)
@@ -57,7 +56,6 @@ class Decoder(basemodel.BaseModel):
         self.n_actions = n_actions
         self.n_characters = n_characters
         self.action_encodings = torch.eye(self.n_actions, self.n_actions)
-        self.batch_size = 1
         self._initialize()
 
     def _initialize(self):
@@ -69,11 +67,13 @@ class Decoder(basemodel.BaseModel):
 
     def forward(self, x, h):
         """
-        x: (batch_size,)
-        h: (batch_size, gru_hidden_size)
+        :param x: tensor shape (1,), dtype: int64
+            contains the last predicted digit
+        :param h: tensor shape (1, gru_hidden_size)
+            contains the hidden state of the RNN.
         """
-        # add sequence dimension
-        x = x.unsqueeze(1)
+        # add batch dimension
+        x = x.unsqueeze(0)
         # one-hot encode the input characters
         one_hot_embedded = torch.nn.functional.one_hot(x, self.n_characters).to(torch.float32)
         # do one step with the RNN (output and hidden state of the rnn are the same here)
@@ -92,29 +92,30 @@ class EncoderDecoder(basemodel.BaseModel):
 
     def forward(self, x, y, teacher_forcing_ratio=0.5):
         """
-        param x: (batch_size, channels, width, height)
-        param y: (batch_size, sequence_length)
+        :param x: (input_sequence_length, channels, width, height)
+        :param y: (target_sequence_length)
             consists of integers indexing correct characters
+
+        :returns outputs: torch tensor (target_sequence_length, decoder.n_actions), dtype: float32
         """
-        batch_size = x.shape[0]  # can only be 1 at the moment!!
-        max_len = y.shape[0]
+        target_sequence_length = y.shape[0]
 
         #tensor to store decoder outputs
-        outputs = torch.zeros(batch_size, max_len, self.decoder.n_actions).to(self.device)
+        outputs = torch.zeros(target_sequence_length, self.decoder.n_actions).to(self.device)
 
         # last hidden state of the encoder is used as the initial hidden state of the decoder
         hidden = self.encoder(x)
 
         # first input to the decoder is the <sos> tokens
-        x = torch.zeros(batch_size, dtype=torch.int64)
+        x = torch.zeros(size=(1,) , dtype=torch.int64)
 
-        for t in range(0, max_len):
+        for t in range(0, target_sequence_length):
             #insert input token embedding, previous hidden and previous cell states
             #receive output tensor (predictions) and new hidden and cell states
             output, hidden = self.decoder(x, hidden)
 
             #place predictions in a tensor holding predictions for each token
-            outputs[:, t] = output
+            outputs[t] = output
 
             #decide if we are going to use teacher forcing or not
             teacher_force = random.random() < teacher_forcing_ratio
