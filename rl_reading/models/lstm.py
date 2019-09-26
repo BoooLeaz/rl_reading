@@ -75,7 +75,7 @@ class Decoder(basemodel.BaseModel):
         # add sequence dimension
         x = x.unsqueeze(1)
         # one-hot encode the input characters
-        one_hot_embedded = torch.nn.functional.one_hot(x.to(torch.int64), self.n_characters).to(torch.float32)
+        one_hot_embedded = torch.nn.functional.one_hot(x, self.n_characters).to(torch.float32)
         # do one step with the RNN (output and hidden state of the rnn are the same here)
         _, h = self.decoder_gru(one_hot_embedded, h)
         # use the RNN hidden state to compute an output indicating which character comes next
@@ -96,8 +96,8 @@ class EncoderDecoder(basemodel.BaseModel):
         param y: (batch_size, sequence_length)
             consists of integers indexing correct characters
         """
-        batch_size = x.shape[0]
-        max_len = y.shape[1]
+        batch_size = x.shape[0]  # can only be 1 at the moment!!
+        max_len = y.shape[0]
 
         #tensor to store decoder outputs
         outputs = torch.zeros(batch_size, max_len, self.decoder.n_actions).to(self.device)
@@ -106,7 +106,7 @@ class EncoderDecoder(basemodel.BaseModel):
         hidden = self.encoder(x)
 
         # first input to the decoder is the <sos> tokens
-        x = torch.zeros(batch_size)
+        x = torch.zeros(batch_size, dtype=torch.int64)
 
         for t in range(0, max_len):
             #insert input token embedding, previous hidden and previous cell states

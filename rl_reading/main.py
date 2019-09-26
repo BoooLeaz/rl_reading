@@ -68,8 +68,14 @@ def main(params):
 #        program_state = start_program_state
 
     # ACTIONS
-    characters = np.array(["<sos>", "<eos>", "0", "1", "linefeed"])
-    actions    = np.array([                  "0", "1", "linefeed"])
+    characters = np.array(["0", "1"])
+    actions    = np.array(["0", "1"])
+    n_rows = 1
+    n_cols = 1
+    batch_size = 1
+    train_size = 10000000
+    n_classes = 10
+    clip_grad = 1
 
     # setup models
     # Reward
@@ -77,7 +83,8 @@ def main(params):
     # QModels
     model_module = getattr(models, params['model'])
     encoder = model_module.Encoder(params)
-    decoder = model_module.Decoder(params, n_actions=len(actions), n_characters=len(characters))
+#    decoder = model_module.Decoder(params, n_actions=len(actions), n_characters=len(characters))
+    decoder = model_module.Decoder(params, n_actions=n_classes, n_characters=n_classes)
     model = model_module.EncoderDecoder(encoder, decoder, device=device)
     model.apply(model_module.init_weights)
 #    target_model = model_module.Model(params, actions)
@@ -91,17 +98,24 @@ def main(params):
 #        model.save(current_model_path)
 #        model.save(previous_model_path)
 
-    n_rows = 1
-    n_cols = 1
-    batch_size = 1
-    n_classes = 2
-    train_size = 100
+    epoch_loss = 0
+    optimizer = torch.optim.Adam(model.parameters())
     for x, y in mnist_david.get_data(
                     batch_size=batch_size, n_classes=n_classes, n_rows=n_rows,
                     n_cols=n_cols,
                     train_size=train_size):
+        y = y.to(torch.int64).flatten()
         outputs = model(x, y)
-        import ipdb; ipdb.set_trace()
+        outputs = outputs.view(batch_size * outputs.shape[1], -1)
+        criterion = torch.nn.CrossEntropyLoss()
+        loss = criterion(outputs, y)
+        optimizer.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad)
+        optimizer.step()
+        epoch_loss += loss.item()
+        print(outputs.argmax().item(), int(y))
+        print(loss.item())
 
     # agent
 #    agent_module = getattr(agents, params['agent'])
