@@ -102,12 +102,12 @@ class EncoderDecoder(basemodel.BaseModel):
         hidden = self.encoder(x)
 
         # first input to the decoder is the <sos> tokens
-        y_hat_ = torch.zeros(batch_size)
+        x = torch.zeros(batch_size)
 
         for t in range(0, max_len):
             #insert input token embedding, previous hidden and previous cell states
             #receive output tensor (predictions) and new hidden and cell states
-            output, hidden = self.decoder(y_hat_, hidden)
+            output, hidden = self.decoder(x, hidden)
 
             #place predictions in a tensor holding predictions for each token
             outputs[t] = output
@@ -116,9 +116,9 @@ class EncoderDecoder(basemodel.BaseModel):
             teacher_force = random.random() < teacher_forcing_ratio
 
             #get the highest predicted token from our predictions
-            top1 = output.argmax(1)
+            top1 = output.argmax(axis=1)
 
             #if teacher forcing, use actual next token as next input
             #if not, use predicted token
-            y_hat_ = y[t] if teacher_force else top1
+            x = y[t] if teacher_force else top1
         return outputs
