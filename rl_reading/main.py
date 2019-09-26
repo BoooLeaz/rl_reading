@@ -68,13 +68,13 @@ def main(params):
 #        program_state = start_program_state
 
     # ACTIONS
-    characters = np.array(["0", "1"])
-    actions    = np.array(["0", "1"])
-    n_rows = 1
+#    characters = np.array(["0", "1"])
+#    actions    = np.array(["0", "1"])
+    n_rows = 2
     n_cols = 1
     batch_size = 1
     train_size = 10000000
-    n_classes = 10
+    n_classes = 3
     clip_grad = 1
 
     # setup models
@@ -104,7 +104,7 @@ def main(params):
                     batch_size=batch_size, n_classes=n_classes, n_rows=n_rows,
                     n_cols=n_cols,
                     train_size=train_size):
-        y = y.to(torch.int64).flatten()
+        y = y.flatten()
         outputs = model(x, y)
         outputs = outputs.view(batch_size * outputs.shape[1], -1)
         criterion = torch.nn.CrossEntropyLoss()

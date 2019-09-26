@@ -51,79 +51,82 @@ class Grid:
 
 
 def get_data(batch_size=32, n_classes=10, n_rows=5, n_cols=5, train_size=1000, padding=0):
-        data_transforms = {
-            'train': transforms.Compose([
-                transforms.Resize((30,30)),
-                transforms.RandomAffine(0, (4/28,4/28)),
-                transforms.Grayscale(),
-                transforms.ToTensor(),
-                transforms.Normalize([0.5], [0.5]),
+    """
+    Returns
+        x: tensor of shape (batch_size, 1, nrows * 28, n_cols * 28), dtype: float32
+        y: tensor of shape (batch_size), dtype int64
+    """
+    data_transforms = {
+        'train': transforms.Compose([
+            transforms.Resize((30,30)),
+            transforms.RandomAffine(0, (4/28,4/28)),
+            transforms.Grayscale(),
+            transforms.ToTensor(),
+            transforms.Normalize([0.5], [0.5]),
 
-            ]),
-            'test': transforms.Compose([
-                transforms.Resize((30,30)),
-                transforms.RandomAffine(0, (4/28,4/28)),
-                transforms.Grayscale(),
-                transforms.ToTensor(),
-                transforms.Normalize([0.5], [0.5]),
-            ]),
-        }
+        ]),
+        'test': transforms.Compose([
+            transforms.Resize((30,30)),
+            transforms.RandomAffine(0, (4/28,4/28)),
+            transforms.Grayscale(),
+            transforms.ToTensor(),
+            transforms.Normalize([0.5], [0.5]),
+        ]),
+    }
 
-        image_datasets = {
-            "train" : torchvision.datasets.MNIST(
-                'dataset/',
-                train=True,
-                download=True,
-                transform=data_transforms["train"]
-            ),
-            "test" : torchvision.datasets.MNIST(
-                'dataset/',
-                train=False,
-                download=True,
-                transform=data_transforms["test"]
-            )
-        }
-        
-        x, y = zip(*[image_datasets["train"][i] for i in range(len(image_datasets["train"]))])
-        x = torch.cat(x)
-        y = torch.tensor(y)
-        n_canvas = n_rows*n_cols
+    image_datasets = {
+        "train" : torchvision.datasets.MNIST(
+            'dataset/',
+            train=True,
+            download=True,
+            transform=data_transforms["train"]
+        ),
+        "test" : torchvision.datasets.MNIST(
+            'dataset/',
+            train=False,
+            download=True,
+            transform=data_transforms["test"]
+        )
+    }
+    
+    x, y = zip(*[image_datasets["train"][i] for i in range(len(image_datasets["train"]))])
+    x = torch.cat(x)
+    y = torch.tensor(y).to(torch.int64)
+    n_canvas = n_rows*n_cols
 
-        x_by_class = {
-            d:x[y==d] for d in range(n_classes)
-        }
+    x_by_class = {
+        d:x[y==d] for d in range(n_classes)
+    }
 
-        grid = Grid(n_rows, n_cols, padding, *x[0].shape)
+    grid = Grid(n_rows, n_cols, padding, *x[0].shape)
 
-        for _ in range(train_size):
-            
-            x_ = torch.zeros(batch_size, *grid.shape)-1
-            y_ = torch.zeros(batch_size, n_canvas)
-            
-            masks = torch.zeros(batch_size, n_classes, *grid.shape)-1
-            
-            concentration_factor = Uniform(0.3,2).sample((batch_size,n_classes))
-            concentration = torch.ones(n_classes)*concentration_factor
+    for _ in range(train_size):
 
-            probs_dir = Dirichlet(concentration).sample()
-            digits = Multinomial(total_count=1, probs=probs_dir).sample((n_canvas,)).permute((1,0,2))
+        x_ = torch.zeros(batch_size, *grid.shape)-1
+        y_ = torch.zeros(batch_size, n_canvas, dtype=torch.int64)
 
-            for isample,sample in enumerate(digits):
-                for id_,d in enumerate(sample):
-                    d = d.argmax().item()
-                    y_[isample,id_] = d
+        masks = torch.zeros(batch_size, n_classes, *grid.shape)-1
 
-                    probs_mult = torch.ones(len(x_by_class[d]))/len(x_by_class[d])
-                    t,l,b,r = grid.bb(id_)
+        concentration_factor = Uniform(0.3,2).sample((batch_size,n_classes))
+        concentration = torch.ones(n_classes)*concentration_factor
 
-                    masks[isample, d].narrow(0,t, grid.cell_height).narrow(1,l,grid.cell_width).copy_(x_by_class[d][
-                        Multinomial(total_count=1, probs=probs_mult).sample().argmax().item()
-                    ])
-                    x_[isample].narrow(0,t, grid.cell_height).narrow(1,l,grid.cell_width).copy_(
-                        masks[isample, d].narrow(0,t, grid.cell_height).narrow(1,l,grid.cell_width)
-                    )
+        probs_dir = Dirichlet(concentration).sample()
+        digits = Multinomial(total_count=1, probs=probs_dir).sample((n_canvas,)).permute((1,0,2))
 
-#            y_ = torch.stack([torch.histc(y__.float(), bins=n_classes) for y__ in y_.view(-1,n_canvas)])
-            x_ = x_.view(-1, 1, *x_[0].shape)
-#            x_ = x_.view(-1, 1, *x_[0].shape).repeat(1,3,1,1)
-            yield x_, y_
+        for isample,sample in enumerate(digits):
+            for id_,d in enumerate(sample):
+                d = d.argmax().item()
+                y_[isample,id_] = d
+
+                probs_mult = torch.ones(len(x_by_class[d]))/len(x_by_class[d])
+                t,l,b,r = grid.bb(id_)
+
+                masks[isample, d].narrow(0,t, grid.cell_height).narrow(1,l,grid.cell_width).copy_(x_by_class[d][
+                    Multinomial(total_count=1, probs=probs_mult).sample().argmax().item()
+                ])
+                x_[isample].narrow(0,t, grid.cell_height).narrow(1,l,grid.cell_width).copy_(
+                    masks[isample, d].narrow(0,t, grid.cell_height).narrow(1,l,grid.cell_width)
+                )
+
+        x_ = x_.view(-1, 1, *x_[0].shape)
+        yield x_, y_
