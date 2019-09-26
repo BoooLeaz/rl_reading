@@ -28,7 +28,8 @@ class Encoder(basemodel.BaseModel):
             ('c5', torch.nn.Conv2d(16, 120, kernel_size=(5, 5))),
             ('relu5', torch.nn.ReLU())
         ]))
-        self.encoder_gru = torch.nn.GRU(input_size=self.gru_hidden_size,
+        self.convnet_output_size = 120
+        self.encoder_gru = torch.nn.GRU(input_size=self.convnet_output_size,
                                         hidden_size=self.gru_hidden_size,
                                         num_layers=1,
                                         batch_first=True)
@@ -44,7 +45,7 @@ class Encoder(basemodel.BaseModel):
         # in this way we can only have batch_size 1
         x = self.convnet(x)
         # reshape to (batch_size=1, sequence_length, gru_input_size)
-        x = x.view(1, sequence_length, self.gru_hidden_size)
+        x = x.view(1, sequence_length, self.convnet_output_size)
         _, hidden = self.encoder_gru(x)
         # hidden shape: (num_layers * num_directions, batch, hidden_size)
         return hidden

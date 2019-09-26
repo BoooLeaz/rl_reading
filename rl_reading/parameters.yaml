@@ -16,7 +16,7 @@ default:
   action_set: 3d
   hallucinate: 0.9  # 0 - 1 where 0 means no hallucination, 1 means only hallucination (1 doesn't make sense in new setting)
   # NN params
-  gru_hidden_size: 120
+  gru_hidden_size: 300
   target_update_rate: 200
   min_train_steps_per_episode: 200
   max_train_steps_per_episode: 2000
