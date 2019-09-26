@@ -96,7 +96,7 @@ class EncoderDecoder(basemodel.BaseModel):
         max_len = y.shape[1]
 
         #tensor to store decoder outputs
-        outputs = torch.zeros(max_len, batch_size, self.decoder.n_actions).to(self.device)
+        outputs = torch.zeros(batch_size, max_len, self.decoder.n_actions).to(self.device)
 
         # last hidden state of the encoder is used as the initial hidden state of the decoder
         hidden = self.encoder(x)
