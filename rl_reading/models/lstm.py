@@ -110,7 +110,7 @@ class EncoderDecoder(basemodel.BaseModel):
             output, hidden = self.decoder(x, hidden)
 
             #place predictions in a tensor holding predictions for each token
-            outputs[t] = output
+            outputs[:, t] = output
 
             #decide if we are going to use teacher forcing or not
             teacher_force = random.random() < teacher_forcing_ratio
