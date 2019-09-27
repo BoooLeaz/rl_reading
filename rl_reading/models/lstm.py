@@ -34,9 +34,11 @@ class Encoder(basemodel.BaseModel):
                                         num_layers=1,
                                         batch_first=True)
 
-    def forward(self, x):
+    def forward(self, x, h):
         """
         :param x: torch tensor (sequence_length, width, height), dtype: float32
+        :param h: (num_rnn_directions * rnn_layers, batch_size, hidden_size)
+            in our case: (1, 1, hidden_size)
 
         :returns hidden: (num_rnn_directions * rnn_layers, batch_size, hidden_size)
         """
@@ -46,9 +48,9 @@ class Encoder(basemodel.BaseModel):
         x = self.convnet(x)
         # reshape to (batch_size=1, sequence_length, gru_input_size)
         x = x.view(1, sequence_length, self.convnet_output_size)
-        _, hidden = self.encoder_gru(x)
+        _, h = self.encoder_gru(x, h)
         # hidden shape: (num_layers * num_directions, batch, hidden_size)
-        return hidden
+        return h
 
 
 class Decoder(basemodel.BaseModel):
@@ -110,17 +112,20 @@ class EncoderDecoder(basemodel.BaseModel):
         #tensor to store decoder outputs
         outputs = torch.zeros(target_sequence_length, self.decoder.n_actions).to(self.device)
 
-        # last hidden state of the encoder is used as the initial hidden state of the decoder
-        hidden = self.encoder(x)
-        # hidden: (num_rnn_directions * rnn_layers, batch_size, hidden_size)
+        # initialize hidden (batch_size, num_rnn_directions, hidden_size)
+        hidden = torch.zeros(1, 1, self.encoder.gru_hidden_size)
 
         # first input to the decoder
-        x = torch.zeros(size=(1,) , dtype=torch.int64)
+        pred_char = torch.zeros(size=(1,) , dtype=torch.int64)
 
         for t in range(0, target_sequence_length):
+            # last hidden state of the encoder is used as the initial hidden state of the decoder
+            hidden = self.encoder(x[[t]], hidden)
+            # hidden: (num_rnn_directions * rnn_layers, batch_size, hidden_size)
+
             #insert input token embedding, previous hidden and previous cell states
             #receive output tensor (predictions) and new hidden and cell states
-            output, hidden = self.decoder(x, hidden)
+            output, hidden = self.decoder(pred_char, hidden)
             # output (batch_size, sequence_length, num_rnn_directions * hidden_size)
             # hidden (batch_size, num_rnn_directions, hidden_size)
 
@@ -132,5 +137,5 @@ class EncoderDecoder(basemodel.BaseModel):
             # top1 shape (,)
 
             # next input
-            x = y[t] if random.random() < 0.5 else top1
+            pred_char = y[t] if random.random() < 0.5 else top1
         return outputs
