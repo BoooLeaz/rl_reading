@@ -96,7 +96,7 @@ class EncoderDecoder(basemodel.BaseModel):
         self.decoder = decoder
         self.device = device
 
-    def forward(self, x, y):
+    def forward(self, x, y, debug=True):
         """
         :param x: (batch_size=1, channels, width, height)
         :param y: (target_sequence_length)
@@ -134,8 +134,12 @@ class EncoderDecoder(basemodel.BaseModel):
             outputs[t] = output
 
             #get the highest predicted token from our predictions
-            output = torch.nn.functional.softmax(output, dim=2)
-            top1 = Multinomial(total_count=1, probs=output[0, 0]).sample((1,)).argmax()
+            if not debug:
+                output = torch.nn.functional.softmax(output, dim=2)
+                top1 = output.argmax(dim=2)
+            else:
+                output = torch.nn.functional.softmax(torch.zeros(size=(9,)))
+                top1 = Multinomial(total_count=1, probs=output).sample((1,)).argmax()
             # top1 shape (,)
 
             # next input

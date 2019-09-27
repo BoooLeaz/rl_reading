@@ -9,6 +9,7 @@ from ruamel.yaml import YAML
 import torch
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import sklearn.metrics
 
 # imports from this project
 import reward
@@ -100,6 +101,7 @@ def main(params):
 
     epoch_loss = 0
     optimizer = torch.optim.Adam(model.parameters())
+    criterion = torch.nn.MSELoss()
     for i, sample in enumerate(mnist_david.get_data(
                     batch_size=batch_size, n_classes=n_classes, n_rows=n_rows,
                     n_cols=n_cols,
@@ -116,7 +118,6 @@ def main(params):
         q2.detach_()
         target_q = rewards + params['gamma'] * q2
 
-        criterion = torch.nn.MSELoss()
         loss = criterion(q, target_q)
         optimizer.zero_grad()
         loss.backward()
@@ -125,9 +126,11 @@ def main(params):
         epoch_loss += loss.item()
         if i % 100 == 0:
             print('iteration: {}'.format(i))
+            _, predicted_chars = model.forward(x, y, debug=False)
             print(predicted_chars)
             print(y)
             print(loss.item())
+            print(sklearn.metrics.accuracy_score(y, predicted_chars))
 
     # agent
 #    agent_module = getattr(agents, params['agent'])
