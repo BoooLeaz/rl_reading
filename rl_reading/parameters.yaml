@@ -28,7 +28,7 @@ default:
   batch_size: 30
   momentum: 0.0  # only active for SGD
   # Reinforcement Learning
-  gamma: 0.97
+  gamma: 0.5
   action_temperature: 0.004
   train_temperature: -0.1  # this temperature is only used for the train step
   fail_reward: -1

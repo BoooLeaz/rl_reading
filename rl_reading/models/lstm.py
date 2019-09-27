@@ -1,4 +1,5 @@
 import torch
+from torch.distributions.multinomial import Multinomial
 from collections import OrderedDict
 import random
 
@@ -126,14 +127,15 @@ class EncoderDecoder(basemodel.BaseModel):
             #insert input token embedding, previous hidden and previous cell states
             #receive output tensor (predictions) and new hidden and cell states
             output, hidden = self.decoder(pred_chars[t], hidden)
-            # output (batch_size, sequence_length, num_rnn_directions * hidden_size)
+            # output (batch_size, sequence_length, num_rnn_directions * decoder.n_actions)
             # hidden (batch_size, num_rnn_directions, hidden_size)
 
             #place predictions in a tensor holding predictions for each token
             outputs[t] = output
 
             #get the highest predicted token from our predictions
-            top1 = output.argmax(axis=2).squeeze()
+            output = torch.nn.functional.softmax(output, dim=2)
+            top1 = Multinomial(total_count=1, probs=output[0, 0]).sample((1,)).argmax()
             # top1 shape (,)
 
             # next input

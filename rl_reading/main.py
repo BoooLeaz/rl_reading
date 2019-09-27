@@ -11,7 +11,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 # imports from this project
-from reward import Reward
+import reward
 import agents
 import models
 import util
@@ -108,9 +108,16 @@ def main(params):
         y = y.flatten()
         # x shape: (batch_size, channels=1, n_rows * 32, n_cols * 32)
         # y shape: (n_rows * n_cols)
-        outputs, predicted_chars = model.forward(x, y)
-        criterion = torch.nn.CrossEntropyLoss()
-        loss = criterion(outputs, y)
+        q, predicted_chars = model.forward(x, y)
+        rewards = reward.get_reward(predicted_chars, y)
+
+        q = q[torch.arange(q.shape[0]), predicted_chars]
+        q2 = torch.cat((q[1:], torch.zeros(size=(1,))))
+        q2.detach_()
+        target_q = rewards + params['gamma'] * q2
+
+        criterion = torch.nn.MSELoss()
+        loss = criterion(q, target_q)
         optimizer.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad)
@@ -118,7 +125,8 @@ def main(params):
         epoch_loss += loss.item()
         if i % 100 == 0:
             print('iteration: {}'.format(i))
-            print(outputs.argmax(axis=1), y)
+            print(predicted_chars)
+            print(y)
             print(loss.item())
 
     # agent

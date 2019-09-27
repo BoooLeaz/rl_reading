@@ -1,24 +1,17 @@
-import numpy as np
+import torch
 
 
-class Reward:
-    def __init__(self, step_reward=0.5, success=10., fail=-10.):
-        self.step_reward = step_reward
-        self.success = success
-        self.fail = fail
+def get_reward(y_hat, y):
+    """
+    :param y_hat: shape (sequence_length,), dtype int64
+    :param y: shape (sequence_length,), dtype int64
+    """
+    r = torch.zeros(size=(y_hat.shape[0],), dtype=torch.float32)
 
-    def calculate(self, s1, s2, ruptures, successes):
-        s1 = s1.reshape((-1, 1, 3))
-        s2 = s2.reshape((-1, 1, 3))
+    for i in range(y_hat.shape[0]):
+        if y_hat[i] == y[i]:
+            r[i] = 1
+        else:
+            r[i] = -1
+    return r
 
-        step_reward = ((s2[:, 0, 2] - s1[:, 0, 2] > 0).astype(np.float32) +
-                       (s2[:, 0, 2] - s1[:, 0, 2] <= 0).astype(np.float32)) \
-                      * self.step_reward
-
-        rupture_reward = np.isclose(s2, ruptures).all(axis=2).any(axis=1) * self.fail
-        success_reward = np.isclose(s2, successes).all(axis=2).any(axis=1) * self.success
-
-        reward = step_reward \
-                 + rupture_reward \
-                 + success_reward
-        return reward
