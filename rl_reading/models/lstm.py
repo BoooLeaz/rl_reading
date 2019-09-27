@@ -125,7 +125,7 @@ class EncoderDecoder(basemodel.BaseModel):
             # hidden (batch_size, num_rnn_directions, hidden_size)
 
             #place predictions in a tensor holding predictions for each token
-            outputs[t] = output
+            outputs[t] = y[t] if random.random() < 0.5 else output
 
             #get the highest predicted token from our predictions
             top1 = output.argmax(axis=2).squeeze()
