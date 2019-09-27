@@ -70,7 +70,7 @@ def main(params):
     # ACTIONS
 #    characters = np.array(["0", "1"])
 #    actions    = np.array(["0", "1"])
-    n_rows = 4
+    n_rows = 5
     n_cols = 5
     batch_size = 1
     train_size = 10000000000

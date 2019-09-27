@@ -28,7 +28,7 @@ class Encoder(basemodel.BaseModel):
             ('c5', torch.nn.Conv2d(16, 120, kernel_size=(5, 5))),
             ('relu5', torch.nn.ReLU())
         ]))
-        self.convnet_output_size = 2040
+        self.convnet_output_size = 120
         self.encoder_gru = torch.nn.GRU(input_size=self.convnet_output_size,
                                         hidden_size=self.gru_hidden_size,
                                         num_layers=1,
@@ -104,7 +104,7 @@ class EncoderDecoder(basemodel.BaseModel):
         target_sequence_length = y.shape[0]
 
         # get patches
-        x = torch.transpose(torch.nn.Unfold(kernel_size=(96, 32), stride=(32, 32))(x), 1, 2).view(-1, 1, 96, 32)
+        x = torch.transpose(torch.nn.Unfold(kernel_size=(32, 32), stride=(32, 32))(x), 1, 2).view(-1, 1, 32, 32)
         # x shape: (sequence_length, channels, width, height)
 
         #tensor to store decoder outputs
