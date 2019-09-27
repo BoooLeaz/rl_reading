@@ -116,7 +116,7 @@ class EncoderDecoder(basemodel.BaseModel):
         hidden = torch.zeros(1, 1, self.encoder.gru_hidden_size)
 
         # first input to the decoder
-        pred_char = torch.zeros(size=(1,) , dtype=torch.int64)
+        pred_chars = torch.zeros(size=(target_sequence_length,), dtype=torch.int64)
 
         for t in range(0, target_sequence_length):
             # last hidden state of the encoder is used as the initial hidden state of the decoder
@@ -125,7 +125,7 @@ class EncoderDecoder(basemodel.BaseModel):
 
             #insert input token embedding, previous hidden and previous cell states
             #receive output tensor (predictions) and new hidden and cell states
-            output, hidden = self.decoder(pred_char, hidden)
+            output, hidden = self.decoder(pred_chars[t], hidden)
             # output (batch_size, sequence_length, num_rnn_directions * hidden_size)
             # hidden (batch_size, num_rnn_directions, hidden_size)
 
@@ -137,5 +137,5 @@ class EncoderDecoder(basemodel.BaseModel):
             # top1 shape (,)
 
             # next input
-            pred_char = y[t] if random.random() < 0.5 else top1
-        return outputs
+            pred_chars[t] = top1
+        return outputs, pred_chars

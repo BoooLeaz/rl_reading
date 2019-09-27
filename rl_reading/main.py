@@ -108,7 +108,7 @@ def main(params):
         y = y.flatten()
         # x shape: (batch_size, channels=1, n_rows * 32, n_cols * 32)
         # y shape: (n_rows * n_cols)
-        outputs = model.forward(x, y)
+        outputs, predicted_chars = model.forward(x, y)
         criterion = torch.nn.CrossEntropyLoss()
         loss = criterion(outputs, y)
         optimizer.zero_grad()
