@@ -106,7 +106,8 @@ def main(params):
                     train_size=train_size)):
         x, y = sample
         y = y.flatten()
-        x = torch.transpose(torch.nn.Unfold(kernel_size=(32, 32), stride=(32, 32))(x), 1, 2).view(-1, 1, 32, 32)
+        # x shape: (batch_size, channels=1, n_rows * 32, n_cols * 32)
+        # y shape: (n_rows * n_cols)
         outputs = model.forward(x, y)
         criterion = torch.nn.CrossEntropyLoss()
         loss = criterion(outputs, y)

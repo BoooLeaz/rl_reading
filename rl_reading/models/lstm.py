@@ -93,15 +93,19 @@ class EncoderDecoder(basemodel.BaseModel):
         self.decoder = decoder
         self.device = device
 
-    def forward(self, x, y, teacher_forcing_ratio=0.5):
+    def forward(self, x, y):
         """
-        :param x: (input_sequence_length, channels, width, height)
+        :param x: (batch_size=1, channels, width, height)
         :param y: (target_sequence_length)
             consists of integers indexing correct characters
 
         :returns outputs: torch tensor (target_sequence_length, decoder.n_actions), dtype: float32
         """
         target_sequence_length = y.shape[0]
+
+        # get patches
+        x = torch.transpose(torch.nn.Unfold(kernel_size=(32, 32), stride=(32, 32))(x), 1, 2).view(-1, 1, 32, 32)
+        # x shape: (sequence_length, channels, width, height)
 
         #tensor to store decoder outputs
         outputs = torch.zeros(target_sequence_length, self.decoder.n_actions).to(self.device)
@@ -123,14 +127,10 @@ class EncoderDecoder(basemodel.BaseModel):
             #place predictions in a tensor holding predictions for each token
             outputs[t] = output
 
-            #decide if we are going to use teacher forcing or not
-            teacher_force = random.random() < teacher_forcing_ratio
-
             #get the highest predicted token from our predictions
             top1 = output.argmax(axis=2).squeeze()
             # top1 shape (,)
 
-            #if teacher forcing, use actual next token as next input
-            #if not, use predicted token
-            x = y[t] if teacher_force else top1
+            # next input
+            x = top1
         return outputs
