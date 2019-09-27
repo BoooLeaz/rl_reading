@@ -24,32 +24,6 @@ def get_loss_f():
     return nn.MSELoss()
 
 
-class Grid:
-
-    def __init__(self, n_rows, n_cols, padding, cell_height, cell_width):
-            self.n_rows = n_rows
-            self.n_cols = n_cols
-            self.padding = padding
-            self.n_canvas = n_rows*n_cols
-            self.cell_height = cell_height
-            self.cell_width = cell_width
-            self.shape = (
-                (self.n_rows * self.cell_height) + ((self.n_rows+1) * self.padding),
-                (self.n_cols * self.cell_width) + ((self.n_cols+1) * self.padding)
-            )
-
-    def bb(self, ind):
-        row = ind//self.n_cols
-        col = (ind%self.n_cols)//self.n_rows
-
-        top = (row * self.cell_height) + ((row+1) * self.padding)
-        left = (col * self.cell_width) + ((col+1) * self.padding)
-        bottom = top + self.cell_height
-        right = left + self.cell_width
-
-        return top, left, bottom, right
-
-
 def get_data(batch_size=32, n_classes=10, n_rows=5, n_cols=5, train_size=1000, padding=0):
     """
     Returns
@@ -88,24 +62,17 @@ def get_data(batch_size=32, n_classes=10, n_rows=5, n_cols=5, train_size=1000, p
             transform=data_transforms["test"]
         )
     }
-    
+
     x, y = zip(*[image_datasets["train"][i] for i in range(len(image_datasets["train"]))])
     x = torch.cat(x)
     y = torch.tensor(y).to(torch.int64)
     n_canvas = n_rows*n_cols
 
-    x_by_class = {
-        d:x[y==d] for d in range(n_classes)
-    }
-
-    grid = Grid(n_rows, n_cols, padding, *x[0].shape)
+    x_by_class = {d: x[y == d] for d in range(n_classes)}
 
     for _ in range(train_size):
-
-        x_ = torch.zeros(batch_size, *grid.shape)-1
+        x_ = torch.zeros(batch_size, n_canvas, 32, 32)
         y_ = torch.zeros(batch_size, n_canvas, dtype=torch.int64)
-
-        masks = torch.zeros(batch_size, n_classes, *grid.shape)-1
 
         concentration_factor = Uniform(0.3,2).sample((batch_size,n_classes))
         concentration = torch.ones(n_classes)*concentration_factor
@@ -119,14 +86,8 @@ def get_data(batch_size=32, n_classes=10, n_rows=5, n_cols=5, train_size=1000, p
                 y_[isample,id_] = d
 
                 probs_mult = torch.ones(len(x_by_class[d]))/len(x_by_class[d])
-                t,l,b,r = grid.bb(id_)
 
-                masks[isample, d].narrow(0,t, grid.cell_height).narrow(1,l,grid.cell_width).copy_(x_by_class[d][
-                    Multinomial(total_count=1, probs=probs_mult).sample().argmax().item()
-                ])
-                x_[isample].narrow(0,t, grid.cell_height).narrow(1,l,grid.cell_width).copy_(
-                    masks[isample, d].narrow(0,t, grid.cell_height).narrow(1,l,grid.cell_width)
-                )
-
-        x_ = x_.view(-1, 1, *x_[0].shape)
+                x_[isample, id_] = x_by_class[d][Multinomial(total_count=1, probs=probs_mult).sample().argmax().item()]
+        x_ = torch.nn.functional.fold(torch.transpose(x_.view(batch_size, n_canvas, 32 * 32), 2, 1), output_size=(32 * n_rows,
+32 * n_cols), kernel_size=(32, 32), stride=(32, 32))
         yield x_, y_
