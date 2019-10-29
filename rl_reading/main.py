@@ -1,5 +1,4 @@
 import argparse
-import logging
 import os
 import sys
 from ruamel.yaml import YAML
@@ -12,10 +11,17 @@ import models
 import mnist_david
 
 yaml = YAML()
-logger = logging.Logger('main_logger')
 
 
 def main(params):
+    # Parameters (can later be put into parameters.yaml)
+    n_rows = 5
+    n_cols = 5
+    batch_size = 1
+    train_size = 1000000
+    n_classes = 9
+    clip_grad = 1
+
     output_path = params['output_path']
     device = 'cpu'
 
@@ -29,21 +35,14 @@ def main(params):
         if not os.path.exists(_path):
             os.makedirs(_path)
 
-    n_rows = 5
-    n_cols = 5
-    batch_size = 1
-    train_size = 10000000000
-    n_classes = 9
-    clip_grad = 1
-
-    # setup models
-    # QModels
+    # Model
     model_module = getattr(models, params['model'])
     encoder = model_module.Encoder(params)
     decoder = model_module.Decoder(params, n_actions=n_classes, n_characters=n_classes)
     model = model_module.EncoderDecoder(encoder, decoder, device=device)
     model.apply(model_module.init_weights)
 
+    # Train
     epoch_loss = 0
     optimizer = torch.optim.Adam(model.parameters())
     criterion = torch.nn.MSELoss()
@@ -58,7 +57,9 @@ def main(params):
         q, predicted_chars = model.forward(x, y)
         rewards = reward.get_reward(predicted_chars, y)
 
+        # take the q-values corresponding to the chosen action at each timestep
         q = q[torch.arange(q.shape[0]), predicted_chars]
+        # as q2, use the q-values from one timestep further
         q2 = torch.cat((q[1:], torch.zeros(size=(1,))))
         q2.detach_()
         target_q = rewards + params['gamma'] * q2
@@ -72,7 +73,7 @@ def main(params):
         if i % 100 == 0:
             print('iteration: {}'.format(i))
             _, predicted_chars = model.forward(x, y, debug=False)
-            print(loss.item())
+            print('Loss: {}'.format(loss.item()))
             print('Accuracy: {}'.format(
                 sklearn.metrics.accuracy_score(y, predicted_chars)))
 
@@ -92,13 +93,9 @@ if __name__ == '__main__':
     if not os.path.exists(params['output_path']):
         os.makedirs(params['output_path'])
     else:
-        inpt = input('WARNING: Output directory already exists! ' +
-                     'Continue training? [y/N] (default: y)')
-        if inpt.capitalize() == 'N':
-            sys.exit('Ok exiting')
-
-    with open(os.path.join(params['output_path'], 'parameters.yaml'), 'w') as f:
-        yaml.dump(params, f)
+        if input('WARNING: Output directory already exists! Continue? [y/n] ') != 'y':
+            print('Ok exiting then')
+            sys.exit()
 
     try:
         main(params)

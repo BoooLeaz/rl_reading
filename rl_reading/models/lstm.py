@@ -1,7 +1,6 @@
 import torch
 from torch.distributions.multinomial import Multinomial
 from collections import OrderedDict
-import random
 
 from . import basemodel
 
