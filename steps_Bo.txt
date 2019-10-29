@@ -1,0 +1,9 @@
+- learn how to use python/ipython debugger
+- Sequence-to-Sequence models [1][2]
+- get familiar with pytorch
+- solve an easy example (inverted pendulum) with pytorch openAI gym [3]
+
+
+[1] https://arxiv.org/abs/1409.3215
+[2] https://github.com/bentrevett/pytorch-seq2seq/blob/master/1%20-%20Sequence%20to%20Sequence%20Learning%20with%20Neural%20Networks.ipynb
+[3] https://github.com/openai/gym
