@@ -72,7 +72,7 @@ def main(params):
         epoch_loss += loss.item()
         if i % 100 == 0:
             print('iteration: {}'.format(i))
-            _, predicted_chars = model.forward(x, y, debug=False)
+            _, predicted_chars = model.forward(x, y)
             print('Loss: {}'.format(loss.item()))
             print('Accuracy: {}'.format(
                 sklearn.metrics.accuracy_score(y, predicted_chars)))

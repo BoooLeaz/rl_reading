@@ -106,7 +106,8 @@ class EncoderDecoder(basemodel.BaseModel):
         target_sequence_length = y.shape[0]
 
         # get patches
-        x = torch.transpose(torch.nn.Unfold(kernel_size=(32, 32), stride=(32, 32))(x), 1, 2).view(-1, 1, 32, 32)
+        x = torch.nn.Unfold(kernel_size=(32, 32), stride=(32, 32))(x)
+        x = torch.transpose(x, 1, 2).view(-1, 1, 32, 32)
         # x shape: (sequence_length, channels, width, height)
 
         #tensor to store decoder outputs
@@ -124,8 +125,8 @@ class EncoderDecoder(basemodel.BaseModel):
             hidden = self.encoder(x[[t]], hidden)
             # hidden: (num_rnn_directions * rnn_layers, batch_size, hidden_size)
 
-            #insert input token embedding, previous hidden and previous cell states
-            #receive output tensor (predictions) and new hidden and cell states
+            # insert input token embedding, previous hidden and previous cell states
+            # receive output tensor (predictions) and new hidden and cell states
             output, hidden = self.decoder(pred_chars[t], hidden)
             # output (batch_size, sequence_length, num_rnn_directions * decoder.n_actions)
             # hidden (batch_size, num_rnn_directions, hidden_size)
@@ -133,15 +134,6 @@ class EncoderDecoder(basemodel.BaseModel):
             #place predictions in a tensor holding predictions for each token
             outputs[t] = output
 
-            #get the highest predicted token from our predictions
-            if not debug:
-                output = torch.nn.functional.softmax(output, dim=2)
-                top1 = output.argmax(dim=2)
-            else:
-                output = torch.nn.functional.softmax(torch.zeros(size=(9,)))
-                top1 = Multinomial(total_count=1, probs=output).sample((1,)).argmax()
-            # top1 shape (,)
-
             # next input
-            pred_chars[t] = top1
+            pred_chars[t] = output.argmax(dim=2)
         return outputs, pred_chars
