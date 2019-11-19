@@ -111,8 +111,9 @@ class EncoderDecoder(basemodel.BaseModel):
 
         #tensor to store decoder outputs
         outputs = torch.zeros(target_sequence_length, self.decoder.n_actions).to(self.device)
+        # outputs shape: (sequence_length, n_actions)
 
-        # initialize hidden (batch_size, num_rnn_directions, hidden_size)
+        # initialize hidden (batch_size=1, num_rnn_directions=1, hidden_size)
         hidden = torch.zeros(1, 1, self.encoder.gru_hidden_size)
 
         # first input to the decoder
