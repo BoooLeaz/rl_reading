@@ -19,7 +19,7 @@ def main(params):
     n_cols = 5
     batch_size = 1
     train_size = 1000000
-    n_classes = 9
+    n_classes = 10
     clip_grad = 1
 
     output_path = params['output_path']
