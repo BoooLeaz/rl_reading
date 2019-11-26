@@ -1,3 +1,4 @@
+2019-10-29
 - learn how to use python/ipython debugger
 - Sequence-to-Sequence models [1][2]
 - get familiar with pytorch
@@ -7,3 +8,13 @@
 [1] https://arxiv.org/abs/1409.3215
 [2] https://github.com/bentrevett/pytorch-seq2seq/blob/master/1%20-%20Sequence%20to%20Sequence%20Learning%20with%20Neural%20Networks.ipynb
 [3] https://github.com/openai/gym
+
+2019-11-26
+- get familiar with code in this repository (rl_reading folder)
+- extend agent/decoder such that it can predict several characters after
+  each encoding step.
+	- add a "stop" action
+	- implement in the decoder that it stops decoding only once the stop action occurs
+	- change input patch size and patch-movement such that the agent is forced to predict multiple
+	  characters after each encoding step
+
