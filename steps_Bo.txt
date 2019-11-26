@@ -17,4 +17,7 @@
 	- implement in the decoder that it stops decoding only once the stop action occurs
 	- change input patch size and patch-movement such that the agent is forced to predict multiple
 	  characters after each encoding step
-
+optionally(!):
+- run the CartPole experiments in parallel on the cluster and
+  figure out which parameters lead to more stable performance.
+  You can use https://github.com/Maltimore/gridsearch_helper
