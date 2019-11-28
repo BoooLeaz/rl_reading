@@ -10,13 +10,17 @@ import reward
 import models
 import mnist_david
 
+from torchsummary import summary
+from matplotlib import pyplot as plt  # for debug only
+
+
 yaml = YAML()
 
 
 def main(params):
     # Parameters (can later be put into parameters.yaml)
-    n_rows = 5
-    n_cols = 5
+    n_rows = 6
+    n_cols = 6       # temporarily set to 6 for 64 * 32 windows
     batch_size = 1
     train_size = 1000000
     n_classes = 10
@@ -36,11 +40,17 @@ def main(params):
             os.makedirs(_path)
 
     # Model
+
     model_module = getattr(models, params['model'])
     encoder = model_module.Encoder(params)
     decoder = model_module.Decoder(params, n_actions=n_classes, n_characters=n_classes)
     model = model_module.EncoderDecoder(encoder, decoder, device=device)
     model.apply(model_module.init_weights)
+
+    # import pdb
+    # pdb.set_trace()
+    # encoder_ = model_module.Encoder(params).to('cpu')
+    # summary(encoder, [(1, 1, 32, 32), (1, 1, 100)], device='cpu')
 
     # Train
     epoch_loss = 0
@@ -50,17 +60,20 @@ def main(params):
                     batch_size=batch_size, n_classes=n_classes, n_rows=n_rows,
                     n_cols=n_cols,
                     train_size=train_size)):
+        # import pdb
+        # pdb.set_trace()
         x, y = sample
         y = y.flatten()
         # x shape: (batch_size, channels=1, n_rows * 32, n_cols * 32)
         # y shape: (n_rows * n_cols)
         q, predicted_chars = model.forward(x, y)
         rewards = reward.get_reward(predicted_chars, y)
-
+        # import pdb
+        # pdb.set_trace()
         # take the q-values corresponding to the chosen action at each timestep
         q = q[torch.arange(q.shape[0]), predicted_chars]
         # as q2, use the q-values from one timestep further
-        q2 = torch.cat((q[1:], torch.zeros(size=(1,))))
+        q2 = torch.cat((q[1:], torch.zeros(size=(1,))))                          # remove SOS add EOS ?
         q2.detach_()
         target_q = rewards + params['gamma'] * q2
 
@@ -79,7 +92,8 @@ def main(params):
 
 
 if __name__ == '__main__':
-    with open(os.path.join('rl_reading', 'parameters.yaml'), 'r') as f:
+    # with open(os.path.join('rl_reading', 'parameters.yaml'), 'r') as f:
+    with open('parameters.yaml', 'r') as f:
         params = dict(yaml.load(f))
         params = params['default']
 
@@ -93,9 +107,10 @@ if __name__ == '__main__':
     if not os.path.exists(params['output_path']):
         os.makedirs(params['output_path'])
     else:
-        if input('WARNING: Output directory already exists! Continue? [y/n] ') != 'y':
-            print('Ok exiting then')
-            sys.exit()
+        pass
+        # if input('WARNING: Output directory already exists! Continue? [y/n] ') != 'y':
+        #     print('Ok exiting then')
+        #     sys.exit()
 
     try:
         main(params)

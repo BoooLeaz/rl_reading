@@ -32,16 +32,16 @@ def get_data(batch_size=32, n_classes=10, n_rows=5, n_cols=5, train_size=1000, p
     """
     data_transforms = {
         'train': transforms.Compose([
-            transforms.Resize((32,32)),
-            transforms.RandomAffine(0, (4/28,4/28)),
+            transforms.Resize((32, 32)),
+            transforms.RandomAffine(0, (4/28, 4/28)),
             transforms.Grayscale(),
             transforms.ToTensor(),
             transforms.Normalize([0.5], [0.5]),
 
         ]),
         'test': transforms.Compose([
-            transforms.Resize((32,32)),
-            transforms.RandomAffine(0, (4/28,4/28)),
+            transforms.Resize((32, 32)),
+            transforms.RandomAffine(0, (4/28, 4/28)),
             transforms.Grayscale(),
             transforms.ToTensor(),
             transforms.Normalize([0.5], [0.5]),
@@ -49,13 +49,13 @@ def get_data(batch_size=32, n_classes=10, n_rows=5, n_cols=5, train_size=1000, p
     }
 
     image_datasets = {
-        "train" : torchvision.datasets.MNIST(
+        "train": torchvision.datasets.MNIST(
             'dataset/',
             train=True,
             download=True,
             transform=data_transforms["train"]
         ),
-        "test" : torchvision.datasets.MNIST(
+        "test": torchvision.datasets.MNIST(
             'dataset/',
             train=False,
             download=True,
@@ -88,6 +88,6 @@ def get_data(batch_size=32, n_classes=10, n_rows=5, n_cols=5, train_size=1000, p
                 probs_mult = torch.ones(len(x_by_class[d]))/len(x_by_class[d])
 
                 x_[isample, id_] = x_by_class[d][Multinomial(total_count=1, probs=probs_mult).sample().argmax().item()]
-        x_ = torch.nn.functional.fold(torch.transpose(x_.view(batch_size, n_canvas, 32 * 32), 2, 1), output_size=(32 * n_rows,
-32 * n_cols), kernel_size=(32, 32), stride=(32, 32))
+        x_ = torch.nn.functional.fold(torch.transpose(x_.view(batch_size, n_canvas, 32 * 32), 2, 1),
+                                      output_size=(32 * n_rows, 32 * n_cols), kernel_size=(32, 32), stride=(32, 32))
         yield x_, y_

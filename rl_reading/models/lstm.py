@@ -1,13 +1,25 @@
 import torch
 from torch.distributions.multinomial import Multinomial
 from collections import OrderedDict
-
 from . import basemodel
+
+from torchsummary import summary
+from matplotlib import pyplot as plt  # for debug only
 
 
 def init_weights(m):
     for name, param in m.named_parameters():
         torch.nn.init.uniform_(param.data, -0.08, 0.08)
+
+
+class Flatten(torch.nn.Module):
+
+    def __init__(self):
+        super(Flatten, self).__init__()
+
+    def forward(self, x):
+        shape = torch.prod(torch.tensor(x.shape[1:])).item()
+        return x.view(-1, shape), shape
 
 
 class Encoder(basemodel.BaseModel):
@@ -16,6 +28,7 @@ class Encoder(basemodel.BaseModel):
 
         self.gru_hidden_size = params['gru_hidden_size']
         self._initialize()
+        self.flatten = Flatten()
 
     def _initialize(self):
         self.convnet = torch.nn.Sequential(OrderedDict([
@@ -26,13 +39,15 @@ class Encoder(basemodel.BaseModel):
             ('relu3', torch.nn.ReLU()),
             ('s4', torch.nn.MaxPool2d(kernel_size=(2, 2), stride=2)),
             ('c5', torch.nn.Conv2d(16, 120, kernel_size=(5, 5))),
-            ('relu5', torch.nn.ReLU())
+            ('relu5', torch.nn.ReLU()),
         ]))
+        self.fc6 = torch.nn.Linear(120*9, 120)   # Not dynamic yet
         self.convnet_output_size = 120
         self.encoder_gru = torch.nn.GRU(input_size=self.convnet_output_size,
-                                        hidden_size=self.gru_hidden_size,
+                                        hidden_size=self.gru_hidden_size,    # 100
                                         num_layers=1,
                                         batch_first=True)
+        # batch_first = True ---> batch, seq, features
 
     def forward(self, x, h):
         """
@@ -42,10 +57,16 @@ class Encoder(basemodel.BaseModel):
 
         :returns hidden: (num_rnn_directions * rnn_layers, batch_size, hidden_size)
         """
+        # import pdb
+        # pdb.set_trace()
         sequence_length = x.size(0)
         # in the batch dimension of the convnet we put the sequence dimension instead
         # in this way we can only have batch_size 1
         x = self.convnet(x)
+        x, shape = self.flatten(x)
+        # self.fc6 = torch.nn.Linear(shape, 120)
+        x = self.fc6(x)
+
         # reshape to (batch_size=1, sequence_length, gru_input_size)
         x = x.view(1, sequence_length, self.convnet_output_size)
         _, h = self.encoder_gru(x, h)
@@ -77,6 +98,7 @@ class Decoder(basemodel.BaseModel):
         :param h: tensor shape (1, 1, gru_hidden_size)
             contains the hidden state of the RNN.
         """
+
         # add sequence_length and num_rnn_directions dimensions
         x = x.view(1, 1)
         # one-hot encode the input characters
@@ -97,17 +119,21 @@ class EncoderDecoder(basemodel.BaseModel):
 
     def forward(self, x, y, debug=True):
         """
-        :param x: (batch_size=1, channels, width, height)
+        :param x: (batch_size=1, channels, width, height)     batch_size != 1?
         :param y: (target_sequence_length)
             consists of integers indexing correct characters
 
         :returns outputs: torch tensor (target_sequence_length, decoder.n_actions), dtype: float32
         """
         target_sequence_length = y.shape[0]
-
+        # import pdb
+        # pdb.set_trace()
         # get patches
-        x = torch.nn.Unfold(kernel_size=(32, 32), stride=(32, 32))(x)
-        x = torch.transpose(x, 1, 2).view(-1, 1, 32, 32)
+        # x = torch.nn.Unfold(kernel_size=(32, 32), stride=(32, 32))(x)
+        x = torch.nn.Unfold(kernel_size=(32, 64), stride=(32, 64))(x)
+        # x shape : (channels, width * height, sequence_length) eg. (1, 1, 160 ,160) --> (1, 1024, 25)
+        x = torch.transpose(x, 1, 2).view(-1, 1, 32, 64)
+        # x = torch.transpose(x, 1, 2).view(-1, 1, 32, 32)
         # x shape: (sequence_length, channels, width, height)
 
         #tensor to store decoder outputs
@@ -122,8 +148,10 @@ class EncoderDecoder(basemodel.BaseModel):
 
         for t in range(0, target_sequence_length):
             # last hidden state of the encoder is used as the initial hidden state of the decoder
+            # import pdb
+            # pdb.set_trace()
             hidden = self.encoder(x[[t]], hidden)
-            # hidden: (num_rnn_directions * rnn_layers, batch_size, hidden_size)
+            # hidden: (num_rnn_directions * rnn_layers, batch_size = 1, hidden_size)
 
             # insert input token embedding, previous hidden and previous cell states
             # receive output tensor (predictions) and new hidden and cell states
